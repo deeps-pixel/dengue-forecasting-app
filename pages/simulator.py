@@ -104,33 +104,52 @@ def show():
         def sync_h_box(): st.session_state[f"sim_hum_box_{cnt}"] = st.session_state[f"sim_hum_slider_{cnt}"]
         def sync_h_slider(): st.session_state[f"sim_hum_slider_{cnt}"] = st.session_state[f"sim_hum_box_{cnt}"]
 
-        # Initialize session state for climatic factors
-        if f'sim_temp_box_{cnt}' not in st.session_state: st.session_state[f'sim_temp_box_{cnt}'] = 26.6
-        if f'sim_temp_slider_{cnt}' not in st.session_state: st.session_state[f'sim_temp_slider_{cnt}'] = 26.6
-        if f'sim_rain_box_{cnt}' not in st.session_state: st.session_state[f'sim_rain_box_{cnt}'] = 5.3
-        if f'sim_rain_slider_{cnt}' not in st.session_state: st.session_state[f'sim_rain_slider_{cnt}'] = 5.3
-        if f'sim_hum_box_{cnt}' not in st.session_state: st.session_state[f'sim_hum_box_{cnt}'] = 80.4
-        if f'sim_hum_slider_{cnt}' not in st.session_state: st.session_state[f'sim_hum_slider_{cnt}'] = 80.4
+        # Calculate global dataset min and max for slider extremes
+        g_t_min, g_t_max = float(df['Temp_avg'].min()), float(df['Temp_avg'].max())
+        g_r_min, g_r_max = float(df['Precipitation_avg'].min()), float(df['Precipitation_avg'].max())
+        g_h_min, g_h_max = float(df['Humidity_avg'].min()), float(df['Humidity_avg'].max())
+        
+        # Calculate district averages for the starting points
+        dist_data = df[df['District'] == selected_district]
+        t_avg, r_avg, h_avg = float(dist_data['Temp_avg'].mean()), float(dist_data['Precipitation_avg'].mean()), float(dist_data['Humidity_avg'].mean())
+
+        # If district changed, update session state to the new district's averages
+        if f'last_district_{cnt}' not in st.session_state or st.session_state[f'last_district_{cnt}'] != selected_district:
+            st.session_state[f'sim_temp_box_{cnt}'] = t_avg
+            st.session_state[f'sim_temp_slider_{cnt}'] = t_avg
+            st.session_state[f'sim_rain_box_{cnt}'] = r_avg
+            st.session_state[f'sim_rain_slider_{cnt}'] = r_avg
+            st.session_state[f'sim_hum_box_{cnt}'] = h_avg
+            st.session_state[f'sim_hum_slider_{cnt}'] = h_avg
+            st.session_state[f'last_district_{cnt}'] = selected_district
+
+        # Initialize session state for climatic factors just in case
+        if f'sim_temp_box_{cnt}' not in st.session_state: st.session_state[f'sim_temp_box_{cnt}'] = t_avg
+        if f'sim_temp_slider_{cnt}' not in st.session_state: st.session_state[f'sim_temp_slider_{cnt}'] = t_avg
+        if f'sim_rain_box_{cnt}' not in st.session_state: st.session_state[f'sim_rain_box_{cnt}'] = r_avg
+        if f'sim_rain_slider_{cnt}' not in st.session_state: st.session_state[f'sim_rain_slider_{cnt}'] = r_avg
+        if f'sim_hum_box_{cnt}' not in st.session_state: st.session_state[f'sim_hum_box_{cnt}'] = h_avg
+        if f'sim_hum_slider_{cnt}' not in st.session_state: st.session_state[f'sim_hum_slider_{cnt}'] = h_avg
 
         # Temperature Section
         col_t1, col_t2 = st.columns([0.85, 0.15])
         with col_t1: ui_elements.render_slider_heading("Temperature (°C)")
-        with col_t2: st.number_input("T", 10.0, 40.0, step=0.1, key=f"sim_temp_box_{cnt}", on_change=sync_t_slider, label_visibility="collapsed")
-        st.slider("TS", 10.0, 40.0, step=0.1, key=f"sim_temp_slider_{cnt}", on_change=sync_t_box, label_visibility="collapsed")
+        with col_t2: st.number_input("T", g_t_min, g_t_max, step=0.1, key=f"sim_temp_box_{cnt}", on_change=sync_t_slider, label_visibility="collapsed")
+        st.slider("TS", g_t_min, g_t_max, step=0.1, key=f"sim_temp_slider_{cnt}", on_change=sync_t_box, label_visibility="collapsed")
         temp = st.session_state[f"sim_temp_slider_{cnt}"]
         
         # Rainfall Section
         col_r1, col_r2 = st.columns([0.85, 0.15])
         with col_r1: ui_elements.render_slider_heading("Rainfall (mm/day)")
-        with col_r2: st.number_input("R", 0.0, 30.0, step=0.1, key=f"sim_rain_box_{cnt}", on_change=sync_r_slider, label_visibility="collapsed")
-        st.slider("RS", 0.0, 30.0, step=0.1, key=f"sim_rain_slider_{cnt}", on_change=sync_r_box, label_visibility="collapsed")
+        with col_r2: st.number_input("R", g_r_min, g_r_max, step=0.1, key=f"sim_rain_box_{cnt}", on_change=sync_r_slider, label_visibility="collapsed")
+        st.slider("RS", g_r_min, g_r_max, step=0.1, key=f"sim_rain_slider_{cnt}", on_change=sync_r_box, label_visibility="collapsed")
         rain = st.session_state[f"sim_rain_slider_{cnt}"]
 
         # Humidity Section
         col_h1, col_h2 = st.columns([0.85, 0.15])
         with col_h1: ui_elements.render_slider_heading("Humidity (%)")
-        with col_h2: st.number_input("H", 50.0, 100.0, step=0.1, key=f"sim_hum_box_{cnt}", on_change=sync_h_slider, label_visibility="collapsed")
-        st.slider("HS", 50.0, 100.0, step=0.1, key=f"sim_hum_slider_{cnt}", on_change=sync_h_box, label_visibility="collapsed")
+        with col_h2: st.number_input("H", g_h_min, g_h_max, step=0.1, key=f"sim_hum_box_{cnt}", on_change=sync_h_slider, label_visibility="collapsed")
+        st.slider("HS", g_h_min, g_h_max, step=0.1, key=f"sim_hum_slider_{cnt}", on_change=sync_h_box, label_visibility="collapsed")
         humidity = st.session_state[f"sim_hum_slider_{cnt}"]
         
         if st.button("Run Simulation", type="primary", use_container_width=True, key=f"sim_run_btn_{cnt}"):
